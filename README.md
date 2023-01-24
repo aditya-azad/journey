@@ -1,6 +1,6 @@
 # Journey
 
-A simple command line utility for daily journalling
+A simple command line utility for daily journaling
 
 ## Installation
 
