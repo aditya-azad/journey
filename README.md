@@ -6,7 +6,7 @@ A simple command line utility for daily journaling
 
 1. Run the following commands. Skip the first one if you have `pyinstaller` already installed on your system.
 
-    ```json
+    ```bash
     pip install -U pyinstaller
     pyinstaller src/journey.py
     ```
