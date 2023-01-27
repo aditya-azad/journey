@@ -11,6 +11,7 @@ DATABASE_FILE_NAME = ".journey_db.json"
 
 
 def write_json(file_path, data):
+    """Write the data into the file, throw an error if cannot find the path"""
     try:
         with open(file_path, "w") as file:
             json.dump(data, file, indent=4)
@@ -19,6 +20,7 @@ def write_json(file_path, data):
 
 
 def read_json(file_path):
+    """Read json file and return the data, throw error if unable to read file"""
     if not os.path.exists(file_path):
         error(f"Cannot find the file: {file_path}")
     with open(file_path, "r") as file:
@@ -27,17 +29,21 @@ def read_json(file_path):
 
 
 def error(message):
+    """Print error message and exit"""
     print(f"ERROR: {message}")
     exit(1)
 
 
 def get_file_hash(file_path):
+    """Get MD5 hash of the file given, no checks on opening the file"""
     with open(file_path, "rb") as file:
         data = file.read()
     return hashlib.md5(data).hexdigest()
 
 
 def get_file_tags(file_path):
+    """Read all the lines starting with \"tags:\" (case insensitive) and return
+    list of all the comma separated values after. Only unique values returned"""
     tags = []
     with open(file_path, "r") as file:
         for line in file.readlines():
@@ -51,6 +57,8 @@ def get_file_tags(file_path):
 
 
 def read_validate_config():
+    """Read the config file and return validate the entries (see documentation).
+    Return the data"""
     data = read_json(CONFIG_FILE_PATH)
     # log dir validation
     if "log_dir" not in data:
@@ -64,17 +72,24 @@ def read_validate_config():
 
 
 def open_log_file_by_date(log_dir, editor, date):
+    """Open the log file with the specific date in desired editor"""
     file_path = os.path.join(log_dir, date.strftime("%Y-%m-%d") + ".md")
     subprocess.run([editor, file_path])
 
 
 def update_data_in_memory(log_dir, data):
+    """Read the database file and change the data variable passed into the
+    function if the files have changed. Return true if the data was changed,
+    else false"""
     is_updated = False
+    relevant_files_in_dir = set()
     for file in os.listdir(log_dir):
         if re.search("^\d{4}-\d{2}-\d{2}.md$", file):
+            relevant_files_in_dir.add(file)
             file_path = os.path.join(log_dir, file)
             file_hash = get_file_hash(file_path)
-            if (file in data["files"]) and (data["files"][file]["hash"] == file_hash):
+            if (file in data["files"]) and \
+               (data["files"][file]["hash"] == file_hash):
                 continue
             is_updated = True
             file_tags = get_file_tags(file_path)
@@ -82,10 +97,15 @@ def update_data_in_memory(log_dir, data):
                 "hash": file_hash,
                 "tags": file_tags
             }
+    for file in data["files"]:
+        if file not in relevant_files_in_dir:
+            del data["files"][file]
     return is_updated
 
 
 def update_get_db_data(log_dir):
+    """Calls update data, creates and returns skeleton data structure if there
+    was no database file present"""
     db_file_path = os.path.join(log_dir, DATABASE_FILE_NAME)
     data = {
         "last_search_results": [],
@@ -116,7 +136,11 @@ def run(args):
         data = update_get_db_data(config["log_dir"])
         # TODO: 
     else:
-        open_log_file_by_date(config["log_dir"], config["editor"], datetime.datetime.now())
+        open_log_file_by_date(
+            config["log_dir"],
+            config["editor"],
+            datetime.datetime.now()
+        )
 
 
 if __name__ == "__main__":
