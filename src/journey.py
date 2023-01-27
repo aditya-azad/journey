@@ -79,8 +79,8 @@ def open_log_file_by_date(log_dir, editor, date):
 
 def update_data_in_memory(log_dir, data):
     """Read the database file and change the data variable passed into the
-    function if the files have changed. Return true if the data was changed,
-    else false"""
+    function if the files have changed or deleted. Return true if the data was
+    changed, else false"""
     is_updated = False
     relevant_files_in_dir = set()
     for file in os.listdir(log_dir):
@@ -97,9 +97,13 @@ def update_data_in_memory(log_dir, data):
                 "hash": file_hash,
                 "tags": file_tags
             }
+    files_to_delete = []
     for file in data["files"]:
         if file not in relevant_files_in_dir:
-            del data["files"][file]
+            files_to_delete.append(file)
+    for file in files_to_delete:
+        is_updated = True
+        del data["files"][file]
     return is_updated
 
 
