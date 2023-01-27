@@ -2,6 +2,11 @@
 
 A simple command line utility for daily journaling
 
+## Features
+
+- Tag files with `tags: a, b, c` in any file that you write, and search on them
+- Use your own editor (tested on terminal based editors)
+
 ## Installation
 
 1. Run the following commands. Skip the first one if you have `pyinstaller` already installed on your system.
@@ -16,6 +21,10 @@ A simple command line utility for daily journaling
 3. Copy the folder inside `dist` folder to a location of your choice
 
 4. Add the folder to your path / start menu
+
+## How to use
+
+See `-h` option
 
 ## Config example
 
