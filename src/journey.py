@@ -102,6 +102,17 @@ def open_log_file_by_date(log_dir, editor, date):
     subprocess.run([editor, file_path])
 
 
+def open_log_file_by_index(log_dir, editor, index, file_list, last_index):
+    """Open the log file with the specified index in desired editor. Also
+    supports \"n\" and \"p\" indices."""
+    file_name = None
+    if index == "n":
+        file_name = file_list[(int(last_index) + 1) % len(file_list)]
+
+    file_path = os.path.join(log_dir, file_name)
+    subprocess.run([editor, file_path])
+
+
 def update_data(log_dir, data):
     """Read the database file and write the data if changed from before which is
     passed into the function. checks if the files have been changed or deleted.
@@ -179,6 +190,15 @@ def run(args):
             print(f"{i + 1}: {result[:-3]}")
         print()
         print("Use -o flag with the index to open one of the files.")
+    elif args.open:
+        data = get_db_data(config["log_dir"])
+        open_log_file_by_index(
+            config["log_dir"],
+            config["editor"],
+            args.open,
+            data["last_search_results"],
+            -1
+        )
     else:
         open_log_file_by_date(
             config["log_dir"],
