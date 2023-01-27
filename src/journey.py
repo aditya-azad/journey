@@ -6,6 +6,7 @@ import os
 import re
 import hashlib
 
+
 CONFIG_FILE_PATH = "./journey_config.json"
 DATABASE_FILE_NAME = ".journey_db.json"
 
@@ -77,10 +78,10 @@ def open_log_file_by_date(log_dir, editor, date):
     subprocess.run([editor, file_path])
 
 
-def update_data_in_memory(log_dir, data):
-    """Read the database file and change the data variable passed into the
-    function if the files have changed or deleted. Return true if the data was
-    changed, else false"""
+def update_data(log_dir, data):
+    """Read the database file and write the data if changed from before which is
+    passed into the function. checks if the files have been changed or deleted.
+    Return true if updated the database"""
     is_updated = False
     relevant_files_in_dir = set()
     for file in os.listdir(log_dir):
@@ -104,12 +105,14 @@ def update_data_in_memory(log_dir, data):
     for file in files_to_delete:
         is_updated = True
         del data["files"][file]
+    if is_updated:
+        write_json(os.path.join(log_dir, DATABASE_FILE_NAME), data)
     return is_updated
 
 
-def update_get_db_data(log_dir):
-    """Calls update data, creates and returns skeleton data structure if there
-    was no database file present"""
+def get_db_data(log_dir):
+    """Creates and returns skeleton data structure if there was no database file
+    present, else returns the data from the file"""
     db_file_path = os.path.join(log_dir, DATABASE_FILE_NAME)
     data = {
         "last_search_results": [],
@@ -117,10 +120,6 @@ def update_get_db_data(log_dir):
     }
     if os.path.exists(db_file_path):
         data = read_json(db_file_path)
-        if update_data_in_memory(log_dir, data):
-            write_json(db_file_path, data)
-    else:
-        write_json(db_file_path, data)
     return data
 
 
@@ -128,18 +127,28 @@ def read_args():
     """Read the arguments and return them"""
     parser = argparse.ArgumentParser(
         prog = "Journey",
-        description = "Command line journaling utility"
+        description = "Command line journaling utility. Run without arguments to open entry for current date."
     )
-    parser.add_argument("-s", "--search")
-    parser.add_argument("-o", "--open")
+    parser.add_argument("-s", "--search",
+        help="Search for tags in your journal")
+    parser.add_argument("-o", "--open",
+        help="Open the journal entry at the given index from the previous search result")
+    parser.add_argument("-u", "--force_update", action="store_true",
+        help="Force update the database after manual change to an entry")
     return parser.parse_args()
 
 
 def run(args):
     """Run the program"""
     config = read_validate_config()
-    if args.search:
-        data = update_get_db_data(config["log_dir"])
+    if args.force_update:
+        data = get_db_data(config["log_dir"])
+        if update_data(config["log_dir"], data):
+            print("Updated the database!")
+        else:
+            print("There was nothing to be updated.")
+    elif args.search:
+        data = get_db_data(config["log_dir"])
         # TODO: 
     else:
         open_log_file_by_date(
