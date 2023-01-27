@@ -125,6 +125,7 @@ def update_get_db_data(log_dir):
 
 
 def read_args():
+    """Read the arguments and return them"""
     parser = argparse.ArgumentParser(
         prog = "Journey",
         description = "Command line journaling utility"
@@ -135,6 +136,7 @@ def read_args():
 
 
 def run(args):
+    """Run the program"""
     config = read_validate_config()
     if args.search:
         data = update_get_db_data(config["log_dir"])
