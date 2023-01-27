@@ -104,19 +104,20 @@ def open_log_file_by_date(log_dir, editor, date):
 
 def open_log_file_by_index(log_dir, editor, index, file_list, last_index):
     """Open the log file with the specified index in desired editor. Also
-    supports \"n\" and \"p\" indices."""
-    file_name = None
+    supports \"n\" and \"p\" indices. Returns the index that was selected."""
+    selected_index = 0
     if index == "n":
-        file_name = file_list[(int(last_index) + 1) % len(file_list)]
+        selected_index = (int(last_index) + 1) % len(file_list)
     elif index == "p":
-        file_name = file_list[(int(last_index) - 1) % len(file_list)]
+        selected_index = (int(last_index) - 1) % len(file_list)
     else:
-        file_name = file_list[int(index) % len(file_list)]
-    file_path = os.path.join(log_dir, file_name)
+        selected_index = int(index) % len(file_list)
+    file_path = os.path.join(log_dir, file_list[selected_index])
     subprocess.run([editor, file_path])
+    return selected_index
 
 
-def update_data(log_dir, data):
+def update_data(log_dir, data, /, *, force):
     """Read the database file and write the data if changed from before which is
     passed into the function. checks if the files have been changed or deleted.
     Return true if updated the database"""
@@ -143,7 +144,8 @@ def update_data(log_dir, data):
     for file in files_to_delete:
         is_updated = True
         del data["files"][file]
-    if is_updated:
+    if is_updated or force:
+        is_updated = True
         write_json(os.path.join(log_dir, DATABASE_FILE_NAME), data)
     return is_updated
 
@@ -154,6 +156,7 @@ def get_db_data(log_dir):
     db_file_path = os.path.join(log_dir, DATABASE_FILE_NAME)
     data = {
         "last_search_results": [],
+        "last_search_index": -1,
         "files": {},
     }
     if os.path.exists(db_file_path):
@@ -179,35 +182,39 @@ def read_args():
 def run(args):
     """Run the program"""
     config = read_validate_config()
+    data = get_db_data(config["log_dir"])
     if args.force_update:
-        data = get_db_data(config["log_dir"])
         if update_data(config["log_dir"], data):
             print("Updated the database!")
         else:
             print("There was nothing to be updated.")
     elif args.search:
-        data = get_db_data(config["log_dir"])
         results = search_tags(args.search, config["log_dir"])
         print("Search results:\n")
-        for i, result in enumerate(results):
-            print(f"{i + 1}: {result[:-3]}")
-        print()
-        print("Use -o flag with the index to open one of the files.")
+        if results:
+            for i, result in enumerate(results):
+                print(f"{i + 1}: {result[:-3]}")
+            print()
+            print("Use -o flag with the index to open one of the files.")
+        else:
+            print("None. Please search for different tags")
     elif args.open:
-        data = get_db_data(config["log_dir"])
-        open_log_file_by_index(
+        index_opened = open_log_file_by_index(
             config["log_dir"],
             config["editor"],
             args.open,
             data["last_search_results"],
-            -1
+            data["last_search_index"],
         )
+        data["last_search_index"] = index_opened
+        update_data(config["log_dir"], data, force=True)
     else:
         open_log_file_by_date(
             config["log_dir"],
             config["editor"],
             datetime.datetime.now()
         )
+        update_data(config["log_dir"], data)
 
 
 if __name__ == "__main__":
