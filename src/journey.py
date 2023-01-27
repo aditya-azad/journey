@@ -59,16 +59,22 @@ def get_file_tags(file_path):
     return list(set(tags))
 
 
-def search_tags(tags_string, log_dir):
-    """Finds the files with the tags given and adds it to the last results
-    value"""
-    db_data = get_db_data(log_dir)
+def get_inv_tags_index(db_data):
+    """Creates and returns an inverted index of tag: files"""
     inv_index = {}
     for file, data in db_data["files"].items():
         for tag in data["tags"]:
             if tag not in inv_index:
                 inv_index[tag] = set()
             inv_index[tag].add(file)
+    return inv_index
+
+
+def search_tags(tags_string, log_dir):
+    """Finds the files with the tags given and adds it to the last results
+    value"""
+    db_data = get_db_data(log_dir)
+    inv_index = get_inv_tags_index(db_data)
     tags = tags_string.strip().split(" ")
     tags = list(map(lambda x: x.strip(), tags))
     files_result = set()
@@ -176,6 +182,8 @@ def read_args():
         help="Open the journal entry at the given index from the previous search result. Use \"n\" or \"p\" as index to get next or previous entry.")
     parser.add_argument("-u", "--force_update", action="store_true",
         help="Force update the database after manual change to an entry.")
+    parser.add_argument("-l", "--list_tags", action="store_true",
+        help="List all the tags you have in database")
     return parser.parse_args()
 
 
@@ -197,6 +205,7 @@ def run(args):
             print()
             print("Use -o flag with the index to open one of the files.")
         else:
+            print()
             print("None. Please search for different tags")
     elif args.open:
         index_opened = open_log_file_by_index(
@@ -208,6 +217,16 @@ def run(args):
         )
         data["last_search_index"] = index_opened
         update_data(config["log_dir"], data, force=True)
+    elif args.list_tags:
+        print("Tags list:\n")
+        tag_list = get_inv_tags_index(data).keys()
+        if tag_list:
+            for i, result in enumerate(tag_list):
+                print(f"{i + 1}: {result}")
+            print()
+        else:
+            print()
+            print("There are no tags in your database. Create tags by adding a line of format: \"tags: 1, foo, c, bar\" in the files")
     else:
         open_log_file_by_date(
             config["log_dir"],
