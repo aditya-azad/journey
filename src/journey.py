@@ -108,7 +108,10 @@ def open_log_file_by_index(log_dir, editor, index, file_list, last_index):
     file_name = None
     if index == "n":
         file_name = file_list[(int(last_index) + 1) % len(file_list)]
-
+    elif index == "p":
+        file_name = file_list[(int(last_index) - 1) % len(file_list)]
+    else:
+        file_name = file_list[int(index) % len(file_list)]
     file_path = os.path.join(log_dir, file_name)
     subprocess.run([editor, file_path])
 
