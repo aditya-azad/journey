@@ -44,7 +44,8 @@ def get_file_hash(file_path):
 
 def get_file_tags(file_path):
     """Read all the lines starting with \"tags:\" (case insensitive) and return
-    list of all the comma separated values after. Only unique values returned"""
+    list of all the comma separated values after. tags are not allowed to have
+    spaces, so it replaces them with -. Only unique values returned"""
     tags = []
     with open(file_path, "r") as file:
         for line in file.readlines():
@@ -52,13 +53,33 @@ def get_file_tags(file_path):
             if tag_keyword.lower() == "tags" and rest:
                 t = rest[0].split(",")
                 t = map(lambda x: x.strip(), t)
+                t = map(lambda x: x.replace(" ", "-"), t)
                 t = filter(lambda x: x, t)
                 tags.extend(t)
     return list(set(tags))
 
 
-def search_tags(tags):
-    print(tags)
+def search_tags(tags_string, log_dir):
+    """Finds the files with the tags given and adds it to the last results
+    value"""
+    db_data = get_db_data(log_dir)
+    inv_index = {}
+    for file, data in db_data["files"].items():
+        for tag in data["tags"]:
+            if tag not in inv_index:
+                inv_index[tag] = set()
+            inv_index[tag].add(file)
+    tags = tags_string.strip().split(" ")
+    tags = list(map(lambda x: x.strip(), tags))
+    files_result = set()
+    for i in range(len(tags)):
+        if tags[i] in inv_index:
+            files_result = files_result.union(inv_index.get(tags[i]))
+    files_result = list(files_result)
+    db_data["last_search_results"] = files_result
+    write_json(os.path.join(log_dir, DATABASE_FILE_NAME), db_data)
+    return files_result
+
 
 def read_validate_config():
     """Read the config file and return validate the entries (see documentation).
@@ -133,11 +154,11 @@ def read_args():
         description = "Command line journaling utility. Run without arguments to open entry for current date."
     )
     parser.add_argument("-s", "--search",
-        help="Search for tags in your journal")
+        help="Search for tags in your journal. If your tag has spaces, replace those with \"-\" for search.")
     parser.add_argument("-o", "--open",
-        help="Open the journal entry at the given index from the previous search result")
+        help="Open the journal entry at the given index from the previous search result. Use \"n\" or \"p\" as index to get next or previous entry.")
     parser.add_argument("-u", "--force_update", action="store_true",
-        help="Force update the database after manual change to an entry")
+        help="Force update the database after manual change to an entry.")
     return parser.parse_args()
 
 
@@ -152,8 +173,12 @@ def run(args):
             print("There was nothing to be updated.")
     elif args.search:
         data = get_db_data(config["log_dir"])
-        search_tags(args.search)
-        # TODO: 
+        results = search_tags(args.search, config["log_dir"])
+        print("Search results:\n")
+        for i, result in enumerate(results):
+            print(f"{i + 1}: {result[:-3]}")
+        print()
+        print("Use -o flag with the index to open one of the files.")
     else:
         open_log_file_by_date(
             config["log_dir"],
