@@ -57,6 +57,9 @@ def get_file_tags(file_path):
     return list(set(tags))
 
 
+def search_tags(tags):
+    print(tags)
+
 def read_validate_config():
     """Read the config file and return validate the entries (see documentation).
     Return the data"""
@@ -149,6 +152,7 @@ def run(args):
             print("There was nothing to be updated.")
     elif args.search:
         data = get_db_data(config["log_dir"])
+        search_tags(args.search)
         # TODO: 
     else:
         open_log_file_by_date(
