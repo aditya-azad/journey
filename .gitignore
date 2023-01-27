@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 journey_config.json
+temp/
