@@ -7,14 +7,14 @@ import re
 import hashlib
 
 
-CONFIG_FILE_PATH = "./journey_config.json"
+CONFIG_FILE_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "journey_config.json")
 DATABASE_FILE_NAME = ".journey_db.json"
 
 
 def write_json(file_path, data):
     """Write the data into the file, throw an error if cannot find the path"""
     try:
-        with open(file_path, "w") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
     except:
         error(f"Cannot write data into: {file_path}, check if path exists.")
@@ -24,7 +24,7 @@ def read_json(file_path):
     """Read json file and return the data, throw error if unable to read file"""
     if not os.path.exists(file_path):
         error(f"Cannot find the file: {file_path}")
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
     return data
 
@@ -47,7 +47,7 @@ def get_file_tags(file_path):
     list of all the comma separated values after. tags are not allowed to have
     spaces, so it replaces them with -. Only unique values returned"""
     tags = []
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         for line in file.readlines():
             tag_keyword, *rest = line.strip().split(":")
             if tag_keyword.lower() == "tags" and rest:
@@ -192,7 +192,7 @@ def run(args):
     config = read_validate_config()
     data = get_db_data(config["log_dir"])
     if args.force_update:
-        if update_data(config["log_dir"], data):
+        if update_data(config["log_dir"], data, force=False):
             print("Updated the database!")
         else:
             print("There was nothing to be updated.")
@@ -233,7 +233,7 @@ def run(args):
             config["editor"],
             datetime.datetime.now()
         )
-        update_data(config["log_dir"], data)
+        update_data(config["log_dir"], data, force=False)
 
 
 if __name__ == "__main__":
