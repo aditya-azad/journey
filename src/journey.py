@@ -43,19 +43,15 @@ def get_file_hash(file_path):
 
 
 def get_file_tags(file_path):
-    """Read all the lines starting with \"tags:\" (case insensitive) and return
-    list of all the comma separated values after. tags are not allowed to have
-    spaces, so it replaces them with -. Only unique values returned"""
+    """Read all the words starting with # and return list of all the tags. Only
+    unique values returned"""
     tags = []
     with open(file_path, "r", encoding="utf-8") as file:
         for line in file.readlines():
-            tag_keyword, *rest = line.strip().split(":")
-            if tag_keyword.lower() == "tags" and rest:
-                t = rest[0].split(",")
-                t = map(lambda x: x.strip(), t)
-                t = map(lambda x: x.replace(" ", "-"), t)
-                t = filter(lambda x: x, t)
-                tags.extend(t)
+            for word in line.split(" "):
+                word = word.strip().lower()
+                if word and word[0] == "#":
+                    tags.append(word[1:])
     return list(set(tags))
 
 

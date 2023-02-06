@@ -4,7 +4,8 @@ A simple command line utility for daily journaling
 
 ## Features
 
-- Tag files with `tags: a, b, c` in any file that you write, and search on them
+- Tag files with `#` in any file that you write, and search on them
+  - use `#<word>` to insert a tag anywhere in the file
 - Use your own editor (tested on terminal based editors)
 
 ## Installation
